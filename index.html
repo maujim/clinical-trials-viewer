@@ -34,17 +34,64 @@
 
     <div class="container-fluid">
       <div class="row">
-        <!-- Sidebar for Filters -->
-        <div class="col-12 col-md-3 bg-light border-right" style="min-height: calc(100vh - 56px)">
-          <div class="p-3">
-            <h2>Filters</h2>
-            <!-- Future filter controls can go here -->
-            <p>(Filter controls placeholder)</p>
+        <!-- TODO: hook this up to actually do stuff -->
+
+        <!-- Left Panel (Filters) -->
+        <div class="col-md-3">
+          <div class="card mb-3">
+            <div class="card-header">
+              <strong>Filters</strong>
+            </div>
+            <div class="card-body">
+              <!-- Age Range Filter -->
+              <div class="mb-3">
+                <label for="ageRange" class="form-label">Age Range</label>
+                <input type="text" class="form-control" id="ageRange" placeholder="e.g., 18-35" />
+              </div>
+
+              <!-- Start Date Filter -->
+              <div class="mb-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate" />
+              </div>
+
+              <!-- Completion Date Filter -->
+              <div class="mb-3">
+                <label for="endDate" class="form-label">Completion Date</label>
+                <input type="date" class="form-control" id="endDate" />
+              </div>
+
+              <!-- Additional Filter Example (Optional) -->
+              <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status">
+                  <option selected>All</option>
+                  <option value="recruiting">Recruiting</option>
+                  <option value="completed">Completed</option>
+                  <option value="active">Active</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Main Content Area -->
         <div class="col-12 col-md-9">
+          <!-- TODO: hook this up to actually do stuff -->
+          <!-- Sorting Options (Top Bar) -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <strong>Sort By:</strong>
+                <select class="form-select d-inline-block" style="width: auto">
+                  <option value="title">Title</option>
+                  <option value="start-date">Start Date</option>
+                  <option value="end-date">End Date</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <div class="py-3">
             <!-- Loading Indicator (only shown if no trials yet) -->
             <template x-if="loading && trials.length === 0">
@@ -118,33 +165,6 @@
               </div>
             </template>
 
-            <!-- Alpine Component Data -->
-            <script>
-              function clinicalTrials() {
-                return {
-                  trials: [], // Your initial trials data here
-                  startDate(trial) {
-                    const startDate = trial.protocolSection.statusModule.startDateStruct;
-                    return startDate.type === 'ESTIMATED' ? `Estimated start date: ${startDate.date}` : startDate.date;
-                  },
-                  completionDate(trial) {
-                    const completionDate = trial.protocolSection.statusModule.completionDateStruct;
-                    return completionDate.type === 'ESTIMATED'
-                      ? `Estimated completion date: ${completionDate.date}`
-                      : completionDate.date;
-                  },
-                  ageRange(trial) {
-                    const eligibilityModule = trial.protocolSection.eligibilityModule;
-                    let ageRange = `from ${eligibilityModule.minimumAge}`;
-                    if (eligibilityModule.maximumAge) {
-                      ageRange += ` to ${eligibilityModule.maximumAge}`;
-                    }
-                    return ageRange;
-                  },
-                };
-              }
-            </script>
-
             <!-- Load More Button / End of Data Message -->
             <div class="text-center my-3">
               <template x-if="nextPageToken">
@@ -181,12 +201,12 @@
           nextPageToken: null,
 
           startDate(trial) {
-            const startDate = trial.protocolSection.statusModule.startDateStruct.date;
-            return `${startDate.date} ${startDate.type === 'ESTIMATED' && '(estimated)'}`;
+            const startDate = trial.protocolSection.statusModule.startDateStruct;
+            return `${startDate.date} ${startDate.type === 'ESTIMATED' ? '(estimated)' : ''}`;
           },
           completionDate(trial) {
             const completionDate = trial.protocolSection.statusModule.completionDateStruct;
-            return `${completionDate.date} ${completionDate.type === 'ESTIMATED' && '(estimated)'}`;
+            return `${completionDate.date} ${completionDate.type === 'ESTIMATED' ? '(estimated)' : ''}`;
           },
           ageRange(trial) {
             const eligibilityModule = trial.protocolSection.eligibilityModule;
