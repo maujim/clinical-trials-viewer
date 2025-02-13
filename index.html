@@ -82,7 +82,7 @@
               <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="status" x-model="filters.status">
-                  <option selected>All</option>
+                  <option selected value="all">All</option>
                   <option value="RECRUITING">Recruiting</option>
                   <option value="ENROLLING_BY_INVITATION">By Invitation</option>
                   <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
@@ -102,10 +102,11 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <strong>Sort By:</strong>
-                <select class="form-select d-inline-block" style="width: auto">
+                <select class="form-select d-inline-block" x-model="sortBy" style="width: auto">
+                  <option selected value="default">default</option>
                   <option value="title">Title</option>
-                  <option value="start-date">Start Date</option>
-                  <option value="end-date">End Date</option>
+                  <option value="start-date-asc">Start Date (ascending)</option>
+                  <option value="start-date-desc">Start Date (descending)</option>
                 </select>
               </div>
             </div>
@@ -205,20 +206,19 @@
     <script>
       const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
       function clinicalTrials() {
+        const defaultFilters = () => {
+          return { age: null, startDate: null, endDate: null, status: 'all' };
+        };
+
         return {
           trials: [],
           loading: false,
           nextPageToken: null,
-          sortBy: 'title',
+          sortBy: 'default',
           showContactIndex: new Set(),
-          filters: { age: null, startDate: null, endDate: null, status: null },
+          filters: defaultFilters(),
           resetFilters() {
-            this.filters = {
-              age: null,
-              startDate: null,
-              endDate: null,
-              status: null,
-            };
+            this.filters = defaultFilters();
           },
 
           startDate(trial) {
@@ -250,10 +250,11 @@
           },
 
           filteredTrials() {
+            this.$nextTick(() => lucide.createIcons());
             let callbacks = [];
 
             // If age filter is set, add it to the filters
-            if (this.filters.age !== null) {
+            if (this.filters.age !== defaultFilters().age) {
               callbacks.push(trial => {
                 const eligibility = trial.protocolSection.eligibilityModule;
                 const trialMinAge = parseInt(eligibility.minimumAge) || 0;
@@ -264,35 +265,53 @@
             }
 
             // If status filter is set, add it to the filters
-            if (this.filters.status !== null) {
+            if (this.filters.status !== defaultFilters().status) {
               callbacks.push(trial => trial.protocolSection.statusModule.overallStatus === this.filters.status);
             }
 
-            return callbacks.length === 0
-              ? this.trials
-              : this.trials.filter(trial => callbacks.every(cb => cb(trial)));
+            const subset =
+              callbacks.length === 0 ? [...this.trials] : this.trials.filter(trial => callbacks.every(cb => cb(trial)));
+
+            return this.sortTrials(subset);
           },
 
-          // Computed sorting logic for trials
-          // TODO: this logic will require some work
-          sortedTrials() {
-            return [...this.trials].sort((a, b) => {
-              if (this.sortBy === 'start-date') {
-                return (
-                  new Date(a.protocolSection.statusModule.startDateStruct.date) -
-                  new Date(b.protocolSection.statusModule.startDateStruct.date)
-                );
-              } else if (this.sortBy === 'end-date') {
-                return (
-                  new Date(a.protocolSection.statusModule.completionDateStruct.date) -
-                  new Date(b.protocolSection.statusModule.completionDateStruct.date)
-                );
-              } else {
-                return a.protocolSection.identificationModule.briefTitle.localeCompare(
-                  b.protocolSection.identificationModule.briefTitle,
-                );
+          sortTrials(unsorted) {
+            if (this.sortBy === 'default') {
+              return unsorted;
+            }
+
+            const getSortFunction = () => {
+              switch (this.sortBy) {
+                case 'title':
+                  return (a, b) =>
+                    a.protocolSection.identificationModule.briefTitle.localeCompare(
+                      b.protocolSection.identificationModule.briefTitle,
+                    );
+
+                case 'start-date-asc':
+                  return (a, b) => {
+                    const dateA = new Date(a.protocolSection.statusModule.startDateStruct.date);
+                    const dateB = new Date(b.protocolSection.statusModule.startDateStruct.date);
+
+                    const res = dateA - dateB;
+
+                    console.log(dateA, dateB, res);
+                    return res;
+                  };
+
+                case 'start-date-desc':
+                  return (a, b) => {
+                    const dateA = new Date(a.protocolSection.statusModule.startDateStruct.date);
+                    const dateB = new Date(b.protocolSection.statusModule.startDateStruct.date);
+
+                    const res = dateB - dateA;
+
+                    console.log(dateA, dateB, res);
+                    return res;
+                  };
               }
-            });
+            };
+            return unsorted.sort(getSortFunction());
           },
 
           async fetchTrials(token = null) {
