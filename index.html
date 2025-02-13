@@ -2,12 +2,178 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clinical Trials Viewer</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <!-- Alpine JS -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+  <body x-data="clinicalTrials()" x-init="init()">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">GANSID</a>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row">
+        <!-- Sidebar for Filters -->
+        <div class="col-12 col-md-3 bg-light border-right" style="min-height: calc(100vh - 56px)">
+          <div class="p-3">
+            <h2>Filters</h2>
+            <!-- Future filter controls can go here -->
+            <p>(Filter controls placeholder)</p>
+          </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="col-12 col-md-9">
+          <div class="py-3">
+            <!-- Loading Indicator (only shown if no trials yet) -->
+            <template x-if="loading && trials.length === 0">
+              <div class="text-center my-3">
+                <div class="spinner-border" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
+                <p>Loading trials...</p>
+              </div>
+            </template>
+
+            <!-- No Trials Message -->
+            <template x-if="!loading && trials.length === 0">
+              <div class="alert alert-warning" role="alert">No trials found.</div>
+            </template>
+
+            <!-- Trials Cards -->
+            <template x-for="(trial, index) in trials" :key="index">
+              <div class="card mb-3">
+                <div class="card-body">
+                  <h5 class="card-title" x-text="trial.protocolSection?.identificationModule?.briefTitle"></h5>
+                  <a
+                    :href="`https://clinicaltrials.gov/study/${trial.protocolSection?.identificationModule?.nctId}`"
+                    target="_blank"
+                  >
+                    <!-- Open study page -->
+                    <i data-lucide="external-link"></i>
+                  </a>
+                </div>
+              </div>
+            </template>
+
+            <!-- Load More Button / End of Data Message -->
+            <div class="text-center my-3">
+              <template x-if="nextPageToken">
+                <button class="btn btn-primary" @click="loadMore()" :disabled="loading">
+                  <span
+                    x-show="loading"
+                    class="spinner-border spinner-border-sm mr-2"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                  <span x-text="loading ? 'Loading...' : 'Load More'"></span>
+                </button>
+              </template>
+              <template x-if="!nextPageToken && trials.length > 0">
+                <p>No more trials available.</p>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      lucide.createIcons();
+    </script>
+
+    <!-- Alpine JS Component -->
+    <script>
+      const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
+      function clinicalTrials() {
+        return {
+          trials: [],
+          loading: false,
+          nextPageToken: null,
+          async fetchTrials(token = null) {
+            this.loading = true;
+
+            let url = new URL(baseUrl);
+            url.searchParams.set('format', 'json');
+            url.searchParams.set(
+              'query.cond',
+              'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism',
+            );
+            url.searchParams.set('filter.overallStatus', 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING');
+            url.searchParams.set('fields', [
+              // 'IdentificationModule',
+              'NCTId',
+              'BriefTitle',
+              'StatusModule',
+              'SponsorCollaboratorsModule',
+              'ConditionsModule',
+              // 'EligibilityModule',
+              'HealthyVolunteers',
+              'Sex',
+              'MinimumAge',
+              'MaximumAge',
+              'ContactsLocationsModule',
+            ]);
+            url.searchParams.set('pageSize', '10');
+
+            if (token) {
+              url.searchParams.set('pageToken', token);
+            }
+
+            try {
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+              }
+
+              const data = await response.json();
+              if (data.studies) {
+                // Append new trials to the existing list
+                this.trials = this.trials.concat(data.studies);
+              }
+
+              // Save the next page token if available
+              this.nextPageToken = data.nextPageToken || null;
+
+              this.$nextTick(() => lucide.createIcons());
+            } catch (error) {
+              console.error('Error fetching trials:', error);
+            } finally {
+              this.loading = false;
+            }
+          },
+          loadMore() {
+            if (this.nextPageToken) {
+              this.fetchTrials(this.nextPageToken);
+            }
+          },
+          init() {
+            if (this.loading) return; // Prevents re-triggering
+            this.fetchTrials();
+          },
+        };
+      }
+    </script>
   </body>
 </html>
