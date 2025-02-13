@@ -187,9 +187,6 @@
       </div>
     </div>
 
-    <script>
-      lucide.createIcons();
-    </script>
 
     <!-- Alpine JS Component -->
     <script>
@@ -211,11 +208,16 @@
           },
           ageRange(trial) {
             const eligibilityModule = trial.protocolSection.eligibilityModule;
-            let ageRange = `from ${eligibilityModule.minimumAge}`;
-            if (eligibilityModule.maximumAge) {
-              ageRange += ` to ${eligibilityModule.maximumAge}`;
+            if (!eligibilityModule.minimumAge && !eligibilityModule.maximumAge) {
+              return 'Age not specified';
             }
-            return ageRange;
+            if (!eligibilityModule.minimumAge) {
+              return `Up to ${eligibilityModule.maximumAge}`;
+            }
+            if (!eligibilityModule.maximumAge) {
+              return `${eligibilityModule.minimumAge} or older`;
+            }
+            return `${eligibilityModule.minimumAge} to ${eligibilityModule.maximumAge}`;
           },
 
           // Computed sorting logic for trials
