@@ -22,6 +22,12 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      [x-cloak] {
+        display: none !important;
+      }
+    </style>
   </head>
 
   <body x-data="clinicalTrials()" x-init="init()">
@@ -34,43 +40,56 @@
 
     <div class="container-fluid">
       <div class="row">
-        <!-- TODO: hook this up to actually do stuff -->
-
         <!-- Left Panel (Filters) -->
         <div class="col-md-3">
           <div class="card mb-3">
             <div class="card-header">
               <strong>Filters</strong>
             </div>
+
             <div class="card-body">
               <!-- Age Range Filter -->
               <div class="mb-3">
-                <label for="ageRange" class="form-label">Age Range</label>
-                <input type="text" class="form-control" id="ageRange" placeholder="e.g., 18-35" />
+                <label class="form-label">How old are you:</label>
+                <div class="d-flex align-items-center">
+                  <input
+                    type="number"
+                    class="form-control me-2"
+                    min="0"
+                    step="1"
+                    x-model.number="filters.age"
+                    placeholder="All ages"
+                    @input="filters.age === '' ? filters.age = null : null"
+                  />
+                </div>
               </div>
+
+              <!-- TODO: hook these up in filteredTrials() -->
 
               <!-- Start Date Filter -->
-              <div class="mb-3">
-                <label for="startDate" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="startDate" />
-              </div>
+              <!-- <div class="mb-3"> -->
+              <!--   <label for="startDate" class="form-label">Start Date</label> -->
+              <!--   <input type="date" class="form-control" id="startDate" x-model="filters.startDate" /> -->
+              <!-- </div> -->
 
-              <!-- Completion Date Filter -->
-              <div class="mb-3">
-                <label for="endDate" class="form-label">Completion Date</label>
-                <input type="date" class="form-control" id="endDate" />
-              </div>
+              <!-- <!-1- Completion Date Filter -1-> -->
+              <!-- <div class="mb-3"> -->
+              <!--   <label for="endDate" class="form-label">Completion Date</label> -->
+              <!--   <input type="date" class="form-control" id="endDate" x-model="filters.endDate" /> -->
+              <!-- </div> -->
 
-              <!-- Additional Filter Example (Optional) -->
+              <!-- Status Filter -->
               <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status">
+                <select class="form-select" id="status" x-model="filters.status">
                   <option selected>All</option>
-                  <option value="recruiting">Recruiting</option>
-                  <option value="completed">Completed</option>
-                  <option value="active">Active</option>
+                  <option value="RECRUITING">Recruiting</option>
+                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
+                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
                 </select>
               </div>
+
+              <button type="button" class="btn btn-outline-secondary" @click="resetFilters()">Reset</button>
             </div>
           </div>
         </div>
@@ -109,59 +128,54 @@
             </template>
 
             <!-- Trials Cards -->
-            <template x-for="(trial, index) in trials" :key="index">
-              <div class="card mb-3">
-                <div class="card-body">
-                  <!-- Title and Date Info -->
+            <template x-for="(trial, index) in filteredTrials()" :key="index">
+              <div class="card mb-3 overflow-hidden">
+                <div class="card-body" x-show.important="!showContactIndex.has(index)">
                   <h5 class="card-title">
                     <strong x-text="trial.protocolSection.identificationModule.briefTitle"></strong>
                   </h5>
 
-                  <div class="text-muted mb-2">
-                    <!-- Condensed Start and Completion Date Logic -->
-                    <span>
-                      <strong>Start date:</strong>
-                      <span x-text="startDate(trial)"></span> </span
-                    ><br />
-                    <span>
-                      <strong>Completion date:</strong>
-                      <span x-text="completionDate(trial)"></span>
-                    </span>
-                  </div>
-
-                  <!-- Eligibility Criteria -->
-                  <p class="card-text">
-                    <strong>Eligibility criteria:</strong>
-                    <br />
-                    <span><strong>Age:</strong> <span x-text="ageRange(trial)"></span> </span><br />
-                    <span
-                      ><strong>Eligible sexes:</strong>
-                      <span x-text="trial.protocolSection.eligibilityModule.sex"></span> </span
-                    ><br />
-                    <span
-                      ><strong>Accepts healthy volunteers:</strong>
-                      <span x-text="trial.protocolSection.eligibilityModule.healthyVolunteers ? 'Yes' : 'No'"></span>
-                    </span>
-                  </p>
-
-                  <!-- Tags/Chips for Status -->
                   <div class="d-flex flex-wrap">
                     <span
-                      class="badge bg-primary me-2"
+                      :class="{
+      'bg-success': trial.protocolSection.statusModule.overallStatus === 'RECRUITING',
+      'bg-primary': trial.protocolSection.statusModule.overallStatus === 'ENROLLING_BY_INVITATION',
+      'bg-warning': trial.protocolSection.statusModule.overallStatus === 'ACTIVE_NOT_RECRUITING'
+    }"
+                      class="badge me-2 text-white"
                       x-text="trial.protocolSection.statusModule.overallStatus"
                     ></span>
-                    <span class="badge bg-secondary me-2" x-text="trial.protocolSection.statusModule.phase"></span>
                   </div>
-
-                  <!-- View Link -->
-                  <a
-                    :href="`https://clinicaltrials.gov/study/${trial.protocolSection.identificationModule.nctId}`"
-                    target="_blank"
-                    class="btn btn-link p-0 mt-2"
-                  >
-                    <i data-lucide="external-link"></i> View Study Details
-                  </a>
                 </div>
+
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item">
+                    <strong>Start date:</strong> <span x-text="startDate(trial)"></span>
+                    <br />
+                    <strong>Completion date:</strong> <span x-text="completionDate(trial)"></span>
+                  </li>
+                  <li class="list-group-item"><strong>Age:</strong> <span x-text="ageRange(trial)"></span></li>
+
+                  <li class="list-group-item">
+                    <strong>Eligible sexes:</strong>
+                    <span x-text="trial.protocolSection.eligibilityModule.sex"></span>
+                  </li>
+
+                  <li class="list-group-item">
+                    <strong>Accepts healthy volunteers:</strong>
+                    <span x-text="trial.protocolSection.eligibilityModule.healthyVolunteers ? 'Yes' : 'No'"></span>
+                  </li>
+                </ul>
+
+                <!-- Footer Buttons -->
+                <a
+                  :href="`https://clinicaltrials.gov/study/${trial.protocolSection.identificationModule.nctId}`"
+                  target="_blank"
+                  class="btn text-center card-footer"
+                >
+                  View Trial Details
+                  <i data-lucide="external-link"></i>
+                </a>
               </div>
             </template>
 
@@ -187,7 +201,6 @@
       </div>
     </div>
 
-
     <!-- Alpine JS Component -->
     <script>
       const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
@@ -197,13 +210,29 @@
           loading: false,
           nextPageToken: null,
           sortBy: 'title',
+          showContactIndex: new Set(),
+          filters: { age: null, startDate: null, endDate: null, status: null },
+          resetFilters() {
+            this.filters = {
+              age: null,
+              startDate: null,
+              endDate: null,
+              status: null,
+            };
+          },
 
           startDate(trial) {
             const startDate = trial.protocolSection.statusModule.startDateStruct;
+            if (!startDate) {
+              return 'Date not available';
+            }
             return `${startDate.date} ${startDate.type === 'ESTIMATED' ? '(estimated)' : ''}`;
           },
           completionDate(trial) {
             const completionDate = trial.protocolSection.statusModule.completionDateStruct;
+            if (!completionDate) {
+              return 'Date not available';
+            }
             return `${completionDate.date} ${completionDate.type === 'ESTIMATED' ? '(estimated)' : ''}`;
           },
           ageRange(trial) {
@@ -218,6 +247,30 @@
               return `${eligibilityModule.minimumAge} or older`;
             }
             return `${eligibilityModule.minimumAge} to ${eligibilityModule.maximumAge}`;
+          },
+
+          filteredTrials() {
+            let callbacks = [];
+
+            // If age filter is set, add it to the filters
+            if (this.filters.age !== null) {
+              callbacks.push(trial => {
+                const eligibility = trial.protocolSection.eligibilityModule;
+                const trialMinAge = parseInt(eligibility.minimumAge) || 0;
+                const trialMaxAge = parseInt(eligibility.maximumAge) || 200;
+
+                return this.filters.age >= trialMinAge && this.filters.age <= trialMaxAge;
+              });
+            }
+
+            // If status filter is set, add it to the filters
+            if (this.filters.status !== null) {
+              callbacks.push(trial => trial.protocolSection.statusModule.overallStatus === this.filters.status);
+            }
+
+            return callbacks.length === 0
+              ? this.trials
+              : this.trials.filter(trial => callbacks.every(cb => cb(trial)));
           },
 
           // Computed sorting logic for trials
