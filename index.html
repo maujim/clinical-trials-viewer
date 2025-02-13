@@ -199,6 +199,7 @@
           trials: [],
           loading: false,
           nextPageToken: null,
+          sortBy: 'title',
 
           startDate(trial) {
             const startDate = trial.protocolSection.statusModule.startDateStruct;
@@ -216,6 +217,29 @@
             }
             return ageRange;
           },
+
+          // Computed sorting logic for trials
+          // TODO: this logic will require some work
+          sortedTrials() {
+            return [...this.trials].sort((a, b) => {
+              if (this.sortBy === 'start-date') {
+                return (
+                  new Date(a.protocolSection.statusModule.startDateStruct.date) -
+                  new Date(b.protocolSection.statusModule.startDateStruct.date)
+                );
+              } else if (this.sortBy === 'end-date') {
+                return (
+                  new Date(a.protocolSection.statusModule.completionDateStruct.date) -
+                  new Date(b.protocolSection.statusModule.completionDateStruct.date)
+                );
+              } else {
+                return a.protocolSection.identificationModule.briefTitle.localeCompare(
+                  b.protocolSection.identificationModule.briefTitle,
+                );
+              }
+            });
+          },
+
           async fetchTrials(token = null) {
             this.loading = true;
 
