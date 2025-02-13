@@ -65,17 +65,85 @@
             <template x-for="(trial, index) in trials" :key="index">
               <div class="card mb-3">
                 <div class="card-body">
-                  <h5 class="card-title" x-text="trial.protocolSection?.identificationModule?.briefTitle"></h5>
+                  <!-- Title and Date Info -->
+                  <h5 class="card-title">
+                    <strong x-text="trial.protocolSection.identificationModule.briefTitle"></strong>
+                  </h5>
+
+                  <div class="text-muted mb-2">
+                    <!-- Condensed Start and Completion Date Logic -->
+                    <span>
+                      <strong>Start date:</strong>
+                      <span x-text="startDate(trial)"></span> </span
+                    ><br />
+                    <span>
+                      <strong>Completion date:</strong>
+                      <span x-text="completionDate(trial)"></span>
+                    </span>
+                  </div>
+
+                  <!-- Eligibility Criteria -->
+                  <p class="card-text">
+                    <strong>Eligibility criteria:</strong>
+                    <br />
+                    <span><strong>Age:</strong> <span x-text="ageRange(trial)"></span> </span><br />
+                    <span
+                      ><strong>Eligible sexes:</strong>
+                      <span x-text="trial.protocolSection.eligibilityModule.sex"></span> </span
+                    ><br />
+                    <span
+                      ><strong>Accepts healthy volunteers:</strong>
+                      <span x-text="trial.protocolSection.eligibilityModule.healthyVolunteers ? 'Yes' : 'No'"></span>
+                    </span>
+                  </p>
+
+                  <!-- Tags/Chips for Status -->
+                  <div class="d-flex flex-wrap">
+                    <span
+                      class="badge bg-primary me-2"
+                      x-text="trial.protocolSection.statusModule.overallStatus"
+                    ></span>
+                    <span class="badge bg-secondary me-2" x-text="trial.protocolSection.statusModule.phase"></span>
+                  </div>
+
+                  <!-- View Link -->
                   <a
-                    :href="`https://clinicaltrials.gov/study/${trial.protocolSection?.identificationModule?.nctId}`"
+                    :href="`https://clinicaltrials.gov/study/${trial.protocolSection.identificationModule.nctId}`"
                     target="_blank"
+                    class="btn btn-link p-0 mt-2"
                   >
-                    <!-- Open study page -->
-                    <i data-lucide="external-link"></i>
+                    <i data-lucide="external-link"></i> View Study Details
                   </a>
                 </div>
               </div>
             </template>
+
+            <!-- Alpine Component Data -->
+            <script>
+              function clinicalTrials() {
+                return {
+                  trials: [], // Your initial trials data here
+                  startDate(trial) {
+                    const startDate = trial.protocolSection.statusModule.startDateStruct;
+                    return startDate.type === 'ESTIMATED' ? `Estimated start date: ${startDate.date}` : startDate.date;
+                  },
+                  completionDate(trial) {
+                    const completionDate = trial.protocolSection.statusModule.completionDateStruct;
+                    return completionDate.type === 'ESTIMATED'
+                      ? `Estimated completion date: ${completionDate.date}`
+                      : completionDate.date;
+                  },
+                  ageRange(trial) {
+                    const eligibilityModule = trial.protocolSection.eligibilityModule;
+                    let ageRange = `from ${eligibilityModule.minimumAge}`;
+                    if (eligibilityModule.maximumAge) {
+                      ageRange += ` to ${eligibilityModule.maximumAge}`;
+                    }
+                    return ageRange;
+                  },
+                };
+              }
+            </script>
 
             <!-- Load More Button / End of Data Message -->
             <div class="text-center my-3">
@@ -111,6 +179,23 @@
           trials: [],
           loading: false,
           nextPageToken: null,
+
+          startDate(trial) {
+            const startDate = trial.protocolSection.statusModule.startDateStruct.date;
+            return `${startDate.date} ${startDate.type === 'ESTIMATED' && '(estimated)'}`;
+          },
+          completionDate(trial) {
+            const completionDate = trial.protocolSection.statusModule.completionDateStruct;
+            return `${completionDate.date} ${completionDate.type === 'ESTIMATED' && '(estimated)'}`;
+          },
+          ageRange(trial) {
+            const eligibilityModule = trial.protocolSection.eligibilityModule;
+            let ageRange = `from ${eligibilityModule.minimumAge}`;
+            if (eligibilityModule.maximumAge) {
+              ageRange += ` to ${eligibilityModule.maximumAge}`;
+            }
+            return ageRange;
+          },
           async fetchTrials(token = null) {
             this.loading = true;
 
