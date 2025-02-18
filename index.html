@@ -89,6 +89,17 @@
                 </select>
               </div>
 
+              <!-- Country Select List -->
+              <div class="mb-3">
+                <label for="country" class="form-label">Country</label>
+                <select class="form-select" id="country-select" x-model="filters.country">
+                  <option value="all">All</option>
+                  <template x-for="country in possible_countries" :key="country">
+                    <option :value="country" x-text="country"></option>
+                  </template>
+                </select>
+              </div>
+
               <button type="button" class="btn btn-outline-secondary" @click="resetFilters()">Reset</button>
             </div>
           </div>
@@ -207,10 +218,8 @@
       </div>
     </div>
 
-    <!-- Alpine JS Component -->
     <script>
-      const baseUrl = 'https://clinicaltrials.gov/api/v2/';
-
+      // url helper functions
       function urlJoin(base, ...paths) {
         let url = new URL(base);
 
@@ -224,13 +233,29 @@
         return url;
       }
 
+      function newUrl(base, paths, params) {
+        let url = urlJoin(base, paths);
+
+        for (const [key, value] of Object.entries(params)) {
+          url.searchParams.set(key, value);
+        }
+
+        return url;
+      }
+    </script>
+
+    <!-- Alpine JS Component -->
+    <script>
+      const baseUrl = 'https://clinicaltrials.gov/api/v2/';
+
       function clinicalTrials() {
         const defaultFilters = () => {
-          return { age: null, startDate: null, endDate: null, status: 'all' };
+          return { age: null, startDate: null, endDate: null, status: 'all', country: 'all' };
         };
 
         return {
           trials: [],
+          possible_countries: [],
           loading: false,
           nextPageToken: null,
           sortBy: 'default',
@@ -299,12 +324,24 @@
               callbacks.push(trial => trial.protocolSection.statusModule.overallStatus === this.filters.status);
             }
 
+            // If country filter is set (not 'all'), add it to the filters
+            if (this.filters.country !== defaultFilters().country) {
+              callbacks.push(trial => {
+                const locations = trial.protocolSection.contactsLocationsModule.locations;
+                if (!locations) {
+                  return false;
+                }
+                const unique_countries = Array.from(new Set(locations.map(x => x.country.toLowerCase())));
+
+                return unique_countries.some(country => country.includes(this.filters.country.toLowerCase()));
+              });
+            }
+
             const subset =
               callbacks.length === 0 ? [...this.trials] : this.trials.filter(trial => callbacks.every(cb => cb(trial)));
 
             return this.sortTrials(subset);
           },
-
           sortTrials(unsorted) {
             if (this.sortBy === 'default') {
               return unsorted;
@@ -344,35 +381,55 @@
             return unsorted.sort(getSortFunction());
           },
 
+          async fetchAllCountries() {
+            let url = newUrl(baseUrl, '/stats/field/values/', {
+              fields: ['LocationCountry'],
+            });
+            try {
+              const response = await fetch(url);
+              if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.status);
+              }
+
+              const data = await response.json();
+              const countries = data[0].topValues.map(x => x.value).sort();
+
+              this.possible_countries = countries;
+            } catch (error) {
+              console.error('Error fetching field stats:', error);
+            }
+          },
+
           async fetchTrials(token = null) {
             this.loading = true;
 
-            let url = urlJoin(baseUrl, '/studies/');
-            url.searchParams.set('format', 'json');
-            url.searchParams.set(
-              'query.cond',
-              'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism',
-            );
-            url.searchParams.set('filter.overallStatus', 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING');
-            url.searchParams.set('fields', [
-              // 'IdentificationModule',
-              'NCTId',
-              'BriefTitle',
-              'StatusModule',
-              'SponsorCollaboratorsModule',
-              'ConditionsModule',
-              // 'EligibilityModule',
-              'HealthyVolunteers',
-              'Sex',
-              'MinimumAge',
-              'MaximumAge',
-              'ContactsLocationsModule',
-            ]);
-            url.searchParams.set('pageSize', '10');
+            const params = {
+              format: 'json',
+              'query.cond':
+                'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism',
+              'filter.overallStatus': 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING',
+              fields: [
+                // 'IdentificationModule',
+                'NCTId',
+                'BriefTitle',
+                'StatusModule',
+                'SponsorCollaboratorsModule',
+                'ConditionsModule',
+                // 'EligibilityModule',
+                'HealthyVolunteers',
+                'Sex',
+                'MinimumAge',
+                'MaximumAge',
+                'ContactsLocationsModule',
+              ],
+              pageSize: '10',
+            };
 
             if (token) {
-              url.searchParams.set('pageToken', token);
+              params.pageToken = token;
             }
+
+            const url = newUrl(baseUrl, '/studies/', params);
 
             try {
               const response = await fetch(url);
@@ -397,11 +454,12 @@
             }
           },
           loadMore() {
-            if (this.nextPageToken) {
-              this.fetchTrials(this.nextPageToken);
-            }
+            if (!this.nextPageToken) return;
+            this.fetchTrials(this.nextPageToken);
           },
+
           init() {
+            this.fetchAllCountries();
             if (this.loading) return; // Prevents re-triggering
             this.fetchTrials();
           },
