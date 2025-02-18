@@ -166,6 +166,11 @@
                     <strong>Accepts healthy volunteers:</strong>
                     <span x-text="trial.protocolSection.eligibilityModule.healthyVolunteers ? 'Yes' : 'No'"></span>
                   </li>
+
+                  <li class="list-group-item">
+                    <strong>Locations:</strong>
+                    <span x-text="locationString(trial)"></span>
+                  </li>
                 </ul>
 
                 <!-- Footer Buttons -->
@@ -261,6 +266,17 @@
               return `${eligibilityModule.minimumAge} or older`;
             }
             return `${eligibilityModule.minimumAge} to ${eligibilityModule.maximumAge}`;
+          },
+          locationString(trial) {
+            const locations = trial.protocolSection.contactsLocationsModule.locations;
+
+            const countries = locations.map(x => x.country);
+            const unique_countries = Array.from(new Set(countries));
+
+            const locationCount = locations.length;
+            const countryCount = unique_countries.length;
+
+            return `${locationCount} locations across ${countryCount} ${countryCount === 1 ? 'country' : 'countries'}`;
           },
 
           filteredTrials() {
