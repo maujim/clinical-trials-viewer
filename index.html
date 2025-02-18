@@ -204,7 +204,21 @@
 
     <!-- Alpine JS Component -->
     <script>
-      const baseUrl = 'https://clinicaltrials.gov/api/v2/studies';
+      const baseUrl = 'https://clinicaltrials.gov/api/v2/';
+
+      function urlJoin(base, ...paths) {
+        let url = new URL(base);
+
+        // Normalize and join paths while handling slashes correctly
+        let newPath = [url.pathname, ...paths]
+          .map(p => p.replace(/^\/+|\/+$/g, '')) // Trim leading/trailing slashes
+          .filter(p => p.length) // Remove empty segments
+          .join('/');
+
+        url.pathname = '/' + newPath; // Ensure leading slash
+        return url;
+      }
+
       function clinicalTrials() {
         const defaultFilters = () => {
           return { age: null, startDate: null, endDate: null, status: 'all' };
@@ -317,7 +331,7 @@
           async fetchTrials(token = null) {
             this.loading = true;
 
-            let url = new URL(baseUrl);
+            let url = urlJoin(baseUrl, '/studies/');
             url.searchParams.set('format', 'json');
             url.searchParams.set(
               'query.cond',
