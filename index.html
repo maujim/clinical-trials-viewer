@@ -48,6 +48,17 @@
             </div>
 
             <div class="card-body">
+              <!-- Condition Filter -->
+              <div class="mb-3">
+                <label class="form-label">Condition</label>
+                <select class="form-select" id="country-select" x-model="filters.condition">
+                  <option selected value="all">All</option>
+                  <template x-for="condition in possible_conditions" :key="condition">
+                    <option :value="condition" x-text="condition"></option>
+                  </template>
+                </select>
+              </div>
+
               <!-- Age Range Filter -->
               <div class="mb-3">
                 <label class="form-label">How old are you:</label>
@@ -249,13 +260,31 @@
       const baseUrl = 'https://clinicaltrials.gov/api/v2/';
 
       function clinicalTrials() {
+        // todo this should probably be a class
+        // default value + callback used in the filteredTrials function
         const defaultFilters = () => {
-          return { age: null, startDate: null, endDate: null, status: 'all', country: 'all' };
+          return {
+            age: null,
+            startDate: null,
+            endDate: null,
+            status: 'all',
+            country: 'all',
+            condition: 'all',
+          };
         };
 
         return {
           trials: [],
           possible_countries: [],
+          possible_conditions: [
+            'thalassemia',
+            'sickle cell',
+            'Aplastic Anemia',
+            'Diamond-Blackfan Anemia',
+            'Hemophilia',
+            'Hematologic Diseases',
+            'Myeloid Chimerism',
+          ],
           loading: false,
           nextPageToken: null,
           sortBy: 'default',
@@ -303,7 +332,6 @@
 
             return `${locationCount} locations across ${countryCount} ${countryCount === 1 ? 'country' : 'countries'}`;
           },
-
           filteredTrials() {
             this.$nextTick(() => lucide.createIcons());
             let callbacks = [];
