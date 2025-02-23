@@ -51,11 +51,38 @@
               <!-- Condition Filter -->
               <div class="mb-3">
                 <label class="form-label">Condition</label>
-                <select class="form-select" id="country-select" x-model="filters.condition" @change="handleFilterChange">
+                <select
+                  class="form-select"
+                  id="country-select"
+                  x-model="filters.condition"
+                  @change="handleFilterChange"
+                >
                   <option selected value="all">All</option>
                   <template x-for="condition in possible_conditions" :key="condition">
                     <option :value="condition" x-text="condition"></option>
                   </template>
+                </select>
+              </div>
+
+              <!-- Location Filter (country) -->
+              <div class="mb-3">
+                <label for="country" class="form-label">Country</label>
+                <select class="form-select" id="country-select" x-model="filters.country" @change="handleFilterChange">
+                  <option value="all">All</option>
+                  <template x-for="country in possible_countries" :key="country">
+                    <option :value="country" x-text="country"></option>
+                  </template>
+                </select>
+              </div>
+
+              <!-- Study Status Filter -->
+              <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="RECRUITING">Recruiting</option>
+                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
+                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
                 </select>
               </div>
 
@@ -76,6 +103,27 @@
                 </div>
               </div>
 
+              <!-- Sex Filter -->
+              <div class="mb-3">
+                <label for="sex" class="form-label">Sex</label>
+                <select class="form-select" id="sex" x-model="filters.sex" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="ALL">All Sexes</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="MALE">Male</option>
+                </select>
+              </div>
+
+              <!-- Healthy Volunteers Filter -->
+              <div class="mb-3">
+                <label for="healthyVolunteers" class="form-label">Healthy Volunteers</label>
+                <select class="form-select" id="healthyVolunteers" x-model="filters.healthyVolunteers" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+
               <!-- TODO: hook these up in filteredTrials() -->
 
               <!-- Start Date Filter -->
@@ -89,28 +137,6 @@
               <!--   <label for="endDate" class="form-label">Completion Date</label> -->
               <!--   <input type="date" class="form-control" id="endDate" x-model="filters.endDate" /> -->
               <!-- </div> -->
-
-              <!-- Status Filter -->
-              <div class="mb-3">
-                <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
-                  <option selected value="all">All</option>
-                  <option value="RECRUITING">Recruiting</option>
-                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
-                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
-                </select>
-              </div>
-
-              <!-- Country Select List -->
-              <div class="mb-3">
-                <label for="country" class="form-label">Country</label>
-                <select class="form-select" id="country-select" x-model="filters.country" @change="handleFilterChange">
-                  <option value="all">All</option>
-                  <template x-for="country in possible_countries" :key="country">
-                    <option :value="country" x-text="country"></option>
-                  </template>
-                </select>
-              </div>
 
               <button type="button" class="btn btn-outline-secondary" @click="resetFilters()">Reset</button>
             </div>
@@ -135,7 +161,7 @@
           </div>
 
           <!-- Fixed height container for trials -->
-          <div class="d-flex flex-column" style="height: calc(100vh - 200px);">
+          <div class="d-flex flex-column" style="height: calc(100vh - 200px)">
             <!-- Scrollable area for trials -->
             <div class="flex-grow-1 overflow-auto mb-3">
               <!-- Loading Indicator -->
@@ -216,24 +242,20 @@
               <nav aria-label="Trial pagination">
                 <ul class="pagination justify-content-center">
                   <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                    <button class="page-link" @click="previousPage()" :disabled="currentPage === 1">
-                      Previous
-                    </button>
+                    <button class="page-link" @click="previousPage()" :disabled="currentPage === 1">Previous</button>
                   </li>
-                  
+
                   <li class="page-item disabled">
                     <span class="page-link">
-                      Page <span x-text="currentPage"></span> of <span x-text="totalPages()"></span>
-                      (<span x-text="totalCount"></span> total results)
+                      Page <span x-text="currentPage"></span> of <span x-text="totalPages()"></span> (<span
+                        x-text="totalCount"
+                      ></span>
+                      total results)
                     </span>
                   </li>
 
                   <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() }">
-                    <button 
-                      class="page-link" 
-                      @click="nextPage()" 
-                      :disabled="currentPage >= totalPages() || loading"
-                    >
+                    <button class="page-link" @click="nextPage()" :disabled="currentPage >= totalPages() || loading">
                       <span x-show="loading" class="spinner-border spinner-border-sm me-1" role="status"></span>
                       Next
                     </button>
@@ -287,6 +309,8 @@
             status: 'all',
             country: 'all',
             condition: 'all',
+            sex: 'all',
+            healthyVolunteers: 'all'
           };
         };
 
@@ -482,34 +506,46 @@
             // Filter-specific parameters
             const filterParams = {
               // Condition filter
-              'query.cond': this.filters.condition === 'all' 
-                ? 'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism'
-                : this.filters.condition,
+              'query.cond':
+                this.filters.condition === 'all'
+                  ? 'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism'
+                  : this.filters.condition,
 
               // Status filter
-              'filter.overallStatus': this.filters.status === 'all'
-                ? 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING'
-                : this.filters.status,
+              'filter.overallStatus':
+                this.filters.status === 'all'
+                  ? 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING'
+                  : this.filters.status,
 
               // Country filter
               ...(this.filters.country !== 'all' && {
-                'query.locn': `AREA[LocationCountry](${this.filters.country})`
+                'query.locn': `AREA[LocationCountry](${this.filters.country})`,
               }),
 
               // Age filter
               ...(this.filters.age !== null && {
                 'filter.minimumAge': `LTEQ${this.filters.age}`,
-                'filter.maximumAge': `GTEQ${this.filters.age}`
+                'filter.maximumAge': `GTEQ${this.filters.age}`,
+              }),
+
+              // Sex filter
+              ...(this.filters.sex !== 'all' && {
+                'filter.sex': this.filters.sex
+              }),
+
+              // Healthy Volunteers filter
+              ...(this.filters.healthyVolunteers !== 'all' && {
+                'filter.healthyVolunteers': this.filters.healthyVolunteers
               }),
 
               // Pagination token
-              ...(token && { pageToken: token })
+              ...(token && { pageToken: token }),
             };
 
             // Combine all parameters
             const params = {
               ...baseParams,
-              ...filterParams
+              ...filterParams,
             };
 
             const url = newUrl(baseUrl, '/studies/', params);
