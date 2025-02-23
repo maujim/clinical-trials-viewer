@@ -334,41 +334,7 @@
           },
           filteredTrials() {
             this.$nextTick(() => lucide.createIcons());
-            let callbacks = [];
-
-            // If age filter is set, add it to the filters
-            if (this.filters.age !== defaultFilters().age) {
-              callbacks.push(trial => {
-                const eligibility = trial.protocolSection.eligibilityModule;
-                const trialMinAge = parseInt(eligibility.minimumAge) || 0;
-                const trialMaxAge = parseInt(eligibility.maximumAge) || 200;
-
-                return this.filters.age >= trialMinAge && this.filters.age <= trialMaxAge;
-              });
-            }
-
-            // If status filter is set, add it to the filters
-            if (this.filters.status !== defaultFilters().status) {
-              callbacks.push(trial => trial.protocolSection.statusModule.overallStatus === this.filters.status);
-            }
-
-            // If country filter is set (not 'all'), add it to the filters
-            if (this.filters.country !== defaultFilters().country) {
-              callbacks.push(trial => {
-                const locations = trial.protocolSection.contactsLocationsModule.locations;
-                if (!locations) {
-                  return false;
-                }
-                const unique_countries = Array.from(new Set(locations.map(x => x.country.toLowerCase())));
-
-                return unique_countries.some(country => country.includes(this.filters.country.toLowerCase()));
-              });
-            }
-
-            const subset =
-              callbacks.length === 0 ? [...this.trials] : this.trials.filter(trial => callbacks.every(cb => cb(trial)));
-
-            return this.sortTrials(subset);
+            return this.sortTrials([...this.trials]);
           },
           sortTrials(unsorted) {
             if (this.sortBy === 'default') {
@@ -428,7 +394,7 @@
             }
           },
 
-          async fetchTrials(token = null, filter_api_call = false) {
+          async fetchTrials(token = null) {
             this.loading = true;
 
             const params = {
@@ -454,12 +420,28 @@
               pageSize: '10',
             };
 
+            // Add token if provided
             if (token) {
               params.pageToken = token;
             }
 
-            if (filter_api_call && this.filters.country !== defaultFilters().country) {
+            // Add filters to API query
+            if (this.filters.status !== 'all') {
+              params['filter.overallStatus'] = this.filters.status;
+            }
+
+            if (this.filters.country !== 'all') {
               params['query.locn'] = `AREA[LocationCountry](${this.filters.country})`;
+            }
+
+            if (this.filters.condition !== 'all') {
+              params['query.cond'] = this.filters.condition;
+            }
+
+            // Age filter needs to be handled differently since it requires both min and max
+            if (this.filters.age !== null) {
+              params['filter.minimumAge'] = `LTEQ${this.filters.age}`;
+              params['filter.maximumAge'] = `GTEQ${this.filters.age}`;
             }
 
             const url = newUrl(baseUrl, '/studies/', params);
@@ -472,8 +454,8 @@
 
               const data = await response.json();
               if (data.studies) {
-                // Append new trials to the existing list
-                this.trials = this.trials.concat(data.studies);
+                // Replace existing trials instead of concatenating
+                this.trials = data.studies;
               }
 
               // Save the next page token if available
