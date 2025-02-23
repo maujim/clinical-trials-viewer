@@ -51,11 +51,38 @@
               <!-- Condition Filter -->
               <div class="mb-3">
                 <label class="form-label">Condition</label>
-                <select class="form-select" id="country-select" x-model="filters.condition" @change="handleFilterChange">
+                <select
+                  class="form-select"
+                  id="country-select"
+                  x-model="filters.condition"
+                  @change="handleFilterChange"
+                >
                   <option selected value="all">All</option>
                   <template x-for="condition in possible_conditions" :key="condition">
                     <option :value="condition" x-text="condition"></option>
                   </template>
+                </select>
+              </div>
+
+              <!-- Location Filter (country) -->
+              <div class="mb-3">
+                <label for="country" class="form-label">Country</label>
+                <select class="form-select" id="country-select" x-model="filters.country" @change="handleFilterChange">
+                  <option value="all">All</option>
+                  <template x-for="country in possible_countries" :key="country">
+                    <option :value="country" x-text="country"></option>
+                  </template>
+                </select>
+              </div>
+
+              <!-- Study Status Filter -->
+              <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="RECRUITING">Recruiting</option>
+                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
+                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
                 </select>
               </div>
 
@@ -89,28 +116,6 @@
               <!--   <label for="endDate" class="form-label">Completion Date</label> -->
               <!--   <input type="date" class="form-control" id="endDate" x-model="filters.endDate" /> -->
               <!-- </div> -->
-
-              <!-- Status Filter -->
-              <div class="mb-3">
-                <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
-                  <option selected value="all">All</option>
-                  <option value="RECRUITING">Recruiting</option>
-                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
-                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
-                </select>
-              </div>
-
-              <!-- Country Select List -->
-              <div class="mb-3">
-                <label for="country" class="form-label">Country</label>
-                <select class="form-select" id="country-select" x-model="filters.country" @change="handleFilterChange">
-                  <option value="all">All</option>
-                  <template x-for="country in possible_countries" :key="country">
-                    <option :value="country" x-text="country"></option>
-                  </template>
-                </select>
-              </div>
 
               <button type="button" class="btn btn-outline-secondary" @click="resetFilters()">Reset</button>
             </div>
