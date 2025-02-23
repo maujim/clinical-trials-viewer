@@ -51,7 +51,7 @@
               <!-- Condition Filter -->
               <div class="mb-3">
                 <label class="form-label">Condition</label>
-                <select class="form-select" id="country-select" x-model="filters.condition">
+                <select class="form-select" id="country-select" x-model="filters.condition" @change="handleFilterChange">
                   <option selected value="all">All</option>
                   <template x-for="condition in possible_conditions" :key="condition">
                     <option :value="condition" x-text="condition"></option>
@@ -71,6 +71,7 @@
                     x-model.number="filters.age"
                     placeholder="All ages"
                     @input="filters.age === '' ? filters.age = null : null"
+                    @change="handleFilterChange"
                   />
                 </div>
               </div>
@@ -92,7 +93,7 @@
               <!-- Status Filter -->
               <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
-                <select class="form-select" id="status" x-model="filters.status">
+                <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
                   <option selected value="all">All</option>
                   <option value="RECRUITING">Recruiting</option>
                   <option value="ENROLLING_BY_INVITATION">By Invitation</option>
@@ -103,7 +104,7 @@
               <!-- Country Select List -->
               <div class="mb-3">
                 <label for="country" class="form-label">Country</label>
-                <select class="form-select" id="country-select" x-model="filters.country">
+                <select class="form-select" id="country-select" x-model="filters.country" @change="handleFilterChange">
                   <option value="all">All</option>
                   <template x-for="country in possible_countries" :key="country">
                     <option :value="country" x-text="country"></option>
@@ -290,10 +291,18 @@
           sortBy: 'default',
           showContactIndex: new Set(),
           filters: defaultFilters(),
+          handleFilterChange() {
+            // Reset pagination
+            this.nextPageToken = null;
+            // Clear existing trials
+            this.trials = [];
+            // Fetch new trials with updated filters
+            this.fetchTrials();
+          },
           resetFilters() {
             this.filters = defaultFilters();
+            this.handleFilterChange();
           },
-
           startDate(trial) {
             const startDate = trial.protocolSection.statusModule.startDateStruct;
             if (!startDate) {
@@ -397,52 +406,57 @@
           async fetchTrials(token = null) {
             this.loading = true;
 
-            const params = {
+            // Base query parameters
+            const baseParams = {
               format: 'json',
               countTotal: true,
-              'query.cond':
-                'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism',
-              'filter.overallStatus': 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING',
+              pageSize: '10',
               fields: [
-                // 'IdentificationModule',
                 'NCTId',
                 'BriefTitle',
                 'StatusModule',
                 'SponsorCollaboratorsModule',
                 'ConditionsModule',
-                // 'EligibilityModule',
                 'HealthyVolunteers',
                 'Sex',
                 'MinimumAge',
                 'MaximumAge',
                 'ContactsLocationsModule',
               ],
-              pageSize: '10',
             };
 
-            // Add token if provided
-            if (token) {
-              params.pageToken = token;
-            }
+            // Filter-specific parameters
+            const filterParams = {
+              // Condition filter
+              'query.cond': this.filters.condition === 'all' 
+                ? 'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism'
+                : this.filters.condition,
 
-            // Add filters to API query
-            if (this.filters.status !== 'all') {
-              params['filter.overallStatus'] = this.filters.status;
-            }
+              // Status filter
+              'filter.overallStatus': this.filters.status === 'all'
+                ? 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING'
+                : this.filters.status,
 
-            if (this.filters.country !== 'all') {
-              params['query.locn'] = `AREA[LocationCountry](${this.filters.country})`;
-            }
+              // Country filter
+              ...(this.filters.country !== 'all' && {
+                'query.locn': `AREA[LocationCountry](${this.filters.country})`
+              }),
 
-            if (this.filters.condition !== 'all') {
-              params['query.cond'] = this.filters.condition;
-            }
+              // Age filter
+              ...(this.filters.age !== null && {
+                'filter.minimumAge': `LTEQ${this.filters.age}`,
+                'filter.maximumAge': `GTEQ${this.filters.age}`
+              }),
 
-            // Age filter needs to be handled differently since it requires both min and max
-            if (this.filters.age !== null) {
-              params['filter.minimumAge'] = `LTEQ${this.filters.age}`;
-              params['filter.maximumAge'] = `GTEQ${this.filters.age}`;
-            }
+              // Pagination token
+              ...(token && { pageToken: token })
+            };
+
+            // Combine all parameters
+            const params = {
+              ...baseParams,
+              ...filterParams
+            };
 
             const url = newUrl(baseUrl, '/studies/', params);
 
@@ -454,13 +468,10 @@
 
               const data = await response.json();
               if (data.studies) {
-                // Replace existing trials instead of concatenating
                 this.trials = data.studies;
               }
 
-              // Save the next page token if available
               this.nextPageToken = data.nextPageToken || null;
-
               this.$nextTick(() => lucide.createIcons());
             } catch (error) {
               console.error('Error fetching trials:', error);
