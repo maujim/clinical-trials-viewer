@@ -103,6 +103,27 @@
                 </div>
               </div>
 
+              <!-- Sex Filter -->
+              <div class="mb-3">
+                <label for="sex" class="form-label">Sex</label>
+                <select class="form-select" id="sex" x-model="filters.sex" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="ALL">All Sexes</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="MALE">Male</option>
+                </select>
+              </div>
+
+              <!-- Healthy Volunteers Filter -->
+              <div class="mb-3">
+                <label for="healthyVolunteers" class="form-label">Healthy Volunteers</label>
+                <select class="form-select" id="healthyVolunteers" x-model="filters.healthyVolunteers" @change="handleFilterChange">
+                  <option selected value="all">All</option>
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </div>
+
               <!-- TODO: hook these up in filteredTrials() -->
 
               <!-- Start Date Filter -->
@@ -288,6 +309,8 @@
             status: 'all',
             country: 'all',
             condition: 'all',
+            sex: 'all',
+            healthyVolunteers: 'all'
           };
         };
 
@@ -503,6 +526,16 @@
               ...(this.filters.age !== null && {
                 'filter.minimumAge': `LTEQ${this.filters.age}`,
                 'filter.maximumAge': `GTEQ${this.filters.age}`,
+              }),
+
+              // Sex filter
+              ...(this.filters.sex !== 'all' && {
+                'filter.sex': this.filters.sex
+              }),
+
+              // Healthy Volunteers filter
+              ...(this.filters.healthyVolunteers !== 'all' && {
+                'filter.healthyVolunteers': this.filters.healthyVolunteers
               }),
 
               // Pagination token
