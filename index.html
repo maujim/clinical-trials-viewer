@@ -135,8 +135,8 @@
         <a class="navbar-brand" href="#">GANSID</a>
         <button
           class="btn btn-outline-secondary d-md-none"
-          @click="showFilters = !showFilters"
-          x-text="showFilters ? 'Hide Filters' : 'Show Filters'"
+          @click="showSidebar = !showSidebar"
+          x-text="showSidebar ? 'Hide Sidebar' : 'Show Sidebar'"
         ></button>
       </div>
     </nav>
@@ -144,10 +144,10 @@
     <div class="app-container">
       <div class="content-area">
         <!-- Backdrop for mobile filters -->
-        <div class="filters-backdrop" :class="{ 'show': showFilters }" @click="showFilters = false"></div>
+        <div class="filters-backdrop" :class="{ 'show': showSidebar }" @click="showSidebar = false"></div>
 
         <!-- Filters Panel -->
-        <div class="filters-panel" :class="{ 'show': showFilters }">
+        <div class="filters-panel" :class="{ 'show': showSidebar }">
           <div class="card border-0">
             <div class="card-header d-flex justify-content-between align-items-center">
               <strong>Filters & Sorting</strong>
@@ -431,7 +431,7 @@
           loading: false,
           nextPageToken: null,
           sortBy: 'default',
-          showFilters: false, // Start with filters hidden
+          showSidebar: false, // Start with filters hidden
           showContactIndex: new Set(),
           filters: defaultFilters(),
           possible_countries: [],
@@ -446,10 +446,10 @@
           ],
 
           toggleFilters() {
-            if (this.showFilters) {
-              this.showFilters = false;
+            if (this.showSidebar) {
+              this.showSidebar = false;
             } else {
-              this.showFilters = true;
+              this.showSidebar = true;
             }
           },
 
@@ -697,14 +697,14 @@
 
           init() {
             // Show filters by default only on desktop
-            this.showFilters = window.innerWidth >= 768;
+            this.showSidebar = window.innerWidth >= 768;
 
             // Handle resize events
             window.addEventListener('resize', () => {
               if (window.innerWidth >= 768) {
-                this.showFilters = true;
+                this.showSidebar = true;
               } else {
-                this.showFilters = false;
+                this.showSidebar = false;
               }
             });
 
