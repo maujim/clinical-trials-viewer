@@ -112,11 +112,9 @@
         padding: 0.5rem;
         background: white;
         border-top: 1px solid #dee2e6;
-
       }
 
       @media (max-width: 576px) {
-
         .pagination-container {
           padding: 0.25rem;
         }
@@ -257,8 +255,7 @@
             <!-- Loading Indicator -->
             <template x-if="loading && trials.length === 0">
               <div class="text-center my-3">
-                <div class="spinner-border" role="status">
-                </div>
+                <div class="spinner-border" role="status"></div>
                 <p>Loading trials...</p>
               </div>
             </template>
@@ -442,12 +439,14 @@
             'Hematologic Diseases',
             'Myeloid Chimerism',
           ],
-        possible_statuses: [ 'RECRUITING','ENROLLING_BY_INVITATION','ACTIVE_NOT_RECRUITING', ],
+          possible_statuses: ['RECRUITING', 'ENROLLING_BY_INVITATION', 'ACTIVE_NOT_RECRUITING'],
 
-        status_to_label(status) {
-            return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-        },
-
+          status_to_label(status) {
+            return status
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, c => c.toUpperCase());
+          },
 
           toggleFilters() {
             if (this.showSidebar) {
@@ -642,23 +641,22 @@
 
             // Filter-specific parameters
             const filterParams = {
-            "filters.advanced": eligibilityData.join(" AND ")
               // Condition filter
               'query.cond':
                 this.filters.condition === 'all'
-                  ? this.possible_conditions.map(cond => `"${cond}"`).join(" OR ")
+                  ? this.possible_conditions.map(cond => `"${cond}"`).join(' OR ')
                   : this.filters.condition,
 
               // Status filter
               'filter.overallStatus':
-                this.filters.status === 'all'
-                ? this.possible_statuses.join("|")
-                  : this.filters.status,
+                this.filters.status === 'all' ? this.possible_statuses.join('|') : this.filters.status,
 
               // Country filter
               ...(this.filters.country !== 'all' && {
                 'query.locn': `AREA[LocationCountry](${this.filters.country})`,
               }),
+
+              'filter.advanced': eligibilityData.join(' AND '),
 
               // Pagination token
               ...(token && { pageToken: token }),
