@@ -327,11 +327,11 @@
           <div class="pagination-container">
             <nav aria-label="Trial pagination">
               <ul class="pagination justify-content-center mb-0">
-                <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+                <li class="page-item" :class="{ 'disabled': currentPage === 1 || totalCount === 0 }">
                   <button
                     class="page-link d-flex align-items-center h-100"
                     @click="previousPage()"
-                    :disabled="currentPage === 1"
+                    :disabled="currentPage === 1 || totalCount === 0"
                   >
                     <i
                       data-lucide="chevron-left"
@@ -351,11 +351,11 @@
                   </span>
                 </li>
 
-                <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() }">
+                <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() || totalCount === 0 }">
                   <button
                     class="page-link d-flex align-items-center h-100"
                     @click="nextPage()"
-                    :disabled="currentPage >= totalPages()"
+                    :disabled="currentPage >= totalPages() || totalCount === 0"
                   >
                     <span>Next</span>
                     <i
@@ -457,7 +457,8 @@
           },
 
           totalPages() {
-            return Math.ceil(this.totalCount / this.pageSize);
+            // Return 1 if there are no results to avoid showing "page 1 of 0"
+            return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
           },
 
           paginatedTrials() {
@@ -679,10 +680,13 @@
               const data = await response.json();
               if (data.studies) {
                 this.trials = token ? [...this.trials, ...data.studies] : data.studies;
+              } else {
+                // If no studies found, set trials to empty array
+                this.trials = [];
               }
-              // Only update totalCount on initial load
-              if (!token && data.totalCount) {
-                this.totalCount = data.totalCount;
+              // Update totalCount on initial load or when no results
+              if (!token || !data.studies) {
+                this.totalCount = data.totalCount || 0;
               }
               this.nextPageToken = data.nextPageToken || null;
               this.$nextTick(() => lucide.createIcons());
