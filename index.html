@@ -197,9 +197,9 @@
                 <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
                   <option selected value="all">All</option>
-                  <option value="RECRUITING">Recruiting</option>
-                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
-                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
+                  <template x-for="status in possible_statuses" :key="status">
+                    <option :value="status" x-text="status_to_label(status)"></option>
+                  </template>
                 </select>
               </div>
 
@@ -434,14 +434,20 @@
           filters: defaultFilters(),
           possible_countries: [],
           possible_conditions: [
-            'thalassemia',
-            'sickle cell',
+            'Thalassemia',
+            'Sickle Cell',
             'Aplastic Anemia',
             'Diamond-Blackfan Anemia',
             'Hemophilia',
             'Hematologic Diseases',
             'Myeloid Chimerism',
           ],
+        possible_statuses: [ 'RECRUITING','ENROLLING_BY_INVITATION','ACTIVE_NOT_RECRUITING', ],
+
+        status_to_label(status) {
+            return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+        },
+
 
           toggleFilters() {
             if (this.showSidebar) {
@@ -621,13 +627,13 @@
               // Condition filter
               'query.cond':
                 this.filters.condition === 'all'
-                  ? 'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism'
+                  ? this.possible_conditions.map(cond => `"${cond}"`).join(" OR ")
                   : this.filters.condition,
 
               // Status filter
               'filter.overallStatus':
                 this.filters.status === 'all'
-                  ? 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING'
+                ? this.possible_statuses.join("|")
                   : this.filters.status,
 
               // Country filter
