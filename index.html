@@ -112,11 +112,9 @@
         padding: 0.5rem;
         background: white;
         border-top: 1px solid #dee2e6;
-
       }
 
       @media (max-width: 576px) {
-
         .pagination-container {
           padding: 0.25rem;
         }
@@ -197,9 +195,9 @@
                 <label for="status" class="form-label">Status</label>
                 <select class="form-select" id="status" x-model="filters.status" @change="handleFilterChange">
                   <option selected value="all">All</option>
-                  <option value="RECRUITING">Recruiting</option>
-                  <option value="ENROLLING_BY_INVITATION">By Invitation</option>
-                  <option value="ACTIVE_NOT_RECRUITING">Active, Not Recruiting</option>
+                  <template x-for="status in possible_statuses" :key="status">
+                    <option :value="status" x-text="status_to_label(status)"></option>
+                  </template>
                 </select>
               </div>
 
@@ -224,7 +222,7 @@
               <div class="mb-3">
                 <label for="sex" class="form-label">Sex</label>
                 <select class="form-select" id="sex" x-model="filters.sex" @change="handleFilterChange">
-                  <option selected value="all">All</option>
+                  <option selected value="ALL">All</option>
                   <option value="FEMALE">Female</option>
                   <option value="MALE">Male</option>
                 </select>
@@ -257,9 +255,7 @@
             <!-- Loading Indicator -->
             <template x-if="loading && trials.length === 0">
               <div class="text-center my-3">
-                <div class="spinner-border" role="status">
-                  <span class="sr-only">Loading...</span>
-                </div>
+                <div class="spinner-border" role="status"></div>
                 <p>Loading trials...</p>
               </div>
             </template>
@@ -331,11 +327,11 @@
           <div class="pagination-container">
             <nav aria-label="Trial pagination">
               <ul class="pagination justify-content-center mb-0">
-                <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
+                <li class="page-item" :class="{ 'disabled': currentPage === 1 || totalCount === 0 }">
                   <button
                     class="page-link d-flex align-items-center h-100"
                     @click="previousPage()"
-                    :disabled="currentPage === 1"
+                    :disabled="currentPage === 1 || totalCount === 0"
                   >
                     <i
                       data-lucide="chevron-left"
@@ -355,11 +351,11 @@
                   </span>
                 </li>
 
-                <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() }">
+                <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() || totalCount === 0 }">
                   <button
                     class="page-link d-flex align-items-center h-100"
                     @click="nextPage()"
-                    :disabled="currentPage >= totalPages()"
+                    :disabled="currentPage >= totalPages() || totalCount === 0"
                   >
                     <span>Next</span>
                     <i
@@ -435,14 +431,22 @@
           filters: defaultFilters(),
           possible_countries: [],
           possible_conditions: [
-            'thalassemia',
-            'sickle cell',
+            'Thalassemia',
+            'Sickle Cell',
             'Aplastic Anemia',
             'Diamond-Blackfan Anemia',
             'Hemophilia',
             'Hematologic Diseases',
             'Myeloid Chimerism',
           ],
+          possible_statuses: ['RECRUITING', 'ENROLLING_BY_INVITATION', 'ACTIVE_NOT_RECRUITING'],
+
+          status_to_label(status) {
+            return status
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, c => c.toUpperCase());
+          },
 
           toggleFilters() {
             if (this.showSidebar) {
@@ -453,7 +457,8 @@
           },
 
           totalPages() {
-            return Math.ceil(this.totalCount / this.pageSize);
+            // Return 1 if there are no results to avoid showing "page 1 of 0"
+            return Math.max(1, Math.ceil(this.totalCount / this.pageSize));
           },
 
           paginatedTrials() {
@@ -607,10 +612,7 @@
                 'StatusModule',
                 'SponsorCollaboratorsModule',
                 'ConditionsModule',
-                'HealthyVolunteers',
-                'Sex',
-                'MinimumAge',
-                'MaximumAge',
+                'EligibilityModule',
                 'ContactsLocationsModule',
               ],
             };
@@ -620,40 +622,42 @@
               baseParams.countTotal = true;
             }
 
+            const eligibilityData = [
+              // Sex filter
+              `AREA[Sex](${this.filters.sex})`,
+
+              // Age filter
+              ...(this.filters.age !== null
+                ? [
+                    `AREA[MinimumAge]RANGE[MIN, ${this.filters.age} years]`,
+                    `AREA[MaximumAge]RANGE[${this.filters.age} years, MAX]`,
+                  ]
+                : []),
+
+              // Healthy Volunteers filter
+              ...(this.filters.healthyVolunteers !== 'all'
+                ? [`AREA[HealthyVolunteers]${this.filters.healthyVolunteers}`]
+                : []),
+            ];
+
             // Filter-specific parameters
             const filterParams = {
               // Condition filter
               'query.cond':
                 this.filters.condition === 'all'
-                  ? 'thalassemia OR (sickle cell) OR Aplastic Anemia OR Diamond-Blackfan Anemia OR Hemophilia OR Hematologic Diseases OR Myeloid Chimerism'
+                  ? this.possible_conditions.map(cond => `"${cond}"`).join(' OR ')
                   : this.filters.condition,
 
               // Status filter
               'filter.overallStatus':
-                this.filters.status === 'all'
-                  ? 'RECRUITING|ENROLLING_BY_INVITATION|ACTIVE_NOT_RECRUITING'
-                  : this.filters.status,
+                this.filters.status === 'all' ? this.possible_statuses.join('|') : this.filters.status,
 
               // Country filter
               ...(this.filters.country !== 'all' && {
                 'query.locn': `AREA[LocationCountry](${this.filters.country})`,
               }),
 
-              // Age filter
-              ...(this.filters.age !== null && {
-                'filter.minimumAge': `LTEQ${this.filters.age}`,
-                'filter.maximumAge': `GTEQ${this.filters.age}`,
-              }),
-
-              // Sex filter
-              ...(this.filters.sex !== 'all' && {
-                'filter.sex': this.filters.sex,
-              }),
-
-              // Healthy Volunteers filter
-              ...(this.filters.healthyVolunteers !== 'all' && {
-                'filter.healthyVolunteers': this.filters.healthyVolunteers,
-              }),
+              'filter.advanced': eligibilityData.join(' AND '),
 
               // Pagination token
               ...(token && { pageToken: token }),
@@ -676,10 +680,13 @@
               const data = await response.json();
               if (data.studies) {
                 this.trials = token ? [...this.trials, ...data.studies] : data.studies;
+              } else {
+                // If no studies found, set trials to empty array
+                this.trials = [];
               }
-              // Only update totalCount on initial load
-              if (!token && data.totalCount) {
-                this.totalCount = data.totalCount;
+              // Update totalCount on initial load or when no results
+              if (!token || !data.studies) {
+                this.totalCount = data.totalCount || 0;
               }
               this.nextPageToken = data.nextPageToken || null;
               this.$nextTick(() => lucide.createIcons());
