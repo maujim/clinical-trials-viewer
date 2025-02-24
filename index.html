@@ -48,11 +48,16 @@
         position: relative;
       }
 
+      .top-nav {
+        border-bottom: 1px solid #dee2e6;
+      }
+
       .trials-container {
         flex: 1;
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        border-left: 1px solid #dee2e6;
       }
 
       .trials-list {
@@ -103,6 +108,7 @@
         padding: 0.5rem;
         background: white;
         border-top: 1px solid #dee2e6;
+
       }
 
       @media (max-width: 576px) {
@@ -123,7 +129,7 @@
 
   <body x-data="clinicalTrials()" x-init="init()">
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="top-nav navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">GANSID</a>
         <button
