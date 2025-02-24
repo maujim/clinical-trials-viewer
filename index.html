@@ -622,8 +622,27 @@
               baseParams.countTotal = true;
             }
 
+            const eligibilityData = [
+              // Sex filter
+              `AREA[Sex](${this.filters.sex})`,
+
+              // Age filter
+              ...(this.filters.age !== null
+                ? [
+                    `AREA[MinimumAge]RANGE[MIN, ${this.filters.age} years]`,
+                    `AREA[MaximumAge]RANGE[${this.filters.age} years, MAX]`,
+                  ]
+                : []),
+
+              // Healthy Volunteers filter
+              ...(this.filters.healthyVolunteers !== 'all'
+                ? [`AREA[HealthyVolunteers]${this.filters.healthyVolunteers}`]
+                : []),
+            ];
+
             // Filter-specific parameters
             const filterParams = {
+            "filters.advanced": eligibilityData.join(" AND ")
               // Condition filter
               'query.cond':
                 this.filters.condition === 'all'
@@ -639,21 +658,6 @@
               // Country filter
               ...(this.filters.country !== 'all' && {
                 'query.locn': `AREA[LocationCountry](${this.filters.country})`,
-              }),
-
-              // Age filter
-              ...(this.filters.age !== null && {
-                'filter.advanced': `AREA[MinimumAge]RANGE[MIN, ${this.filters.age} years] AND AREA[MaximumAge]RANGE[${this.filters.age} years, MAX]`
-              }),
-
-              // Sex filter
-              ...(this.filters.sex !== 'all' && {
-                'filter.advanced': `AREA[Sex](${this.filters.sex})`
-              }),
-
-              // Healthy Volunteers filter
-              ...(this.filters.healthyVolunteers !== 'all' && {
-                  'filter.advanced': `AREA[HealthyVolunteers]${this.filters.healthyVolunteers}`,
               }),
 
               // Pagination token
