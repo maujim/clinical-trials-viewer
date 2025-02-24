@@ -224,7 +224,7 @@
               <div class="mb-3">
                 <label for="sex" class="form-label">Sex</label>
                 <select class="form-select" id="sex" x-model="filters.sex" @change="handleFilterChange">
-                  <option selected value="all">All</option>
+                  <option selected value="ALL">All</option>
                   <option value="FEMALE">Female</option>
                   <option value="MALE">Male</option>
                 </select>
@@ -606,10 +606,7 @@
                 'StatusModule',
                 'SponsorCollaboratorsModule',
                 'ConditionsModule',
-                'HealthyVolunteers',
-                'Sex',
-                'MinimumAge',
-                'MaximumAge',
+                'EligibilityModule',
                 'ContactsLocationsModule',
               ],
             };
@@ -640,18 +637,17 @@
 
               // Age filter
               ...(this.filters.age !== null && {
-                'filter.minimumAge': `LTEQ${this.filters.age}`,
-                'filter.maximumAge': `GTEQ${this.filters.age}`,
+                'filter.advanced': `AREA[MinimumAge]RANGE[MIN, ${this.filters.age} years] AND AREA[MaximumAge]RANGE[${this.filters.age} years, MAX]`
               }),
 
               // Sex filter
               ...(this.filters.sex !== 'all' && {
-                'filter.sex': this.filters.sex,
+                'filter.advanced': `AREA[Sex](${this.filters.sex})`
               }),
 
               // Healthy Volunteers filter
               ...(this.filters.healthyVolunteers !== 'all' && {
-                'filter.healthyVolunteers': this.filters.healthyVolunteers,
+                  'filter.advanced': `AREA[HealthyVolunteers]${this.filters.healthyVolunteers}`,
               }),
 
               // Pagination token
