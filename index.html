@@ -116,9 +116,6 @@
       }
 
       @media (max-width: 576px) {
-        .pagination-info {
-          font-size: 0.875rem;
-        }
 
         .pagination-container {
           padding: 0.25rem;
@@ -352,7 +349,8 @@
 
                 <li class="page-item disabled">
                   <span class="page-link pagination-info">
-                    <span class="d-none d-sm-inline">Page </span><span x-text="currentPage"></span> of
+                    <span class="d-none d-sm-inline">Page </span>
+                    <span x-text="currentPage"></span> of
                     <span x-text="totalPages()"></span>
                     <span class="d-none d-sm-inline"> (<span x-text="totalCount"></span> results) </span>
                   </span>
