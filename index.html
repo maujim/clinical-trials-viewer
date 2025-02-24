@@ -87,9 +87,11 @@
       @media (max-width: 768px) {
         .filters-panel {
           position: fixed;
-          top: 56px;
+          top: 56px; /* Set to navbar height */
           left: 0;
           bottom: 0;
+          width: 100%;
+          height: calc(100vh - 56px); /* Subtract navbar height */
           z-index: 1030;
           transform: translateX(-100%);
           box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -101,6 +103,8 @@
 
         .filters-backdrop.show {
           display: block;
+          top: 56px; /* Adjust backdrop to start below navbar */
+          height: calc(100vh - 56px); /* Adjust backdrop height */
         }
       }
 
@@ -150,12 +154,6 @@
           <div class="card border-0">
             <div class="card-header d-flex justify-content-between align-items-center">
               <strong>Filters & Sorting</strong>
-              <button
-                type="button"
-                class="btn-close d-md-none"
-                @click="showFilters = false"
-                aria-label="Close"
-              ></button>
             </div>
 
             <div class="card-body">
