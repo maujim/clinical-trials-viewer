@@ -27,8 +27,9 @@
       [x-cloak] {
         display: none !important;
       }
-      
-      html, body {
+
+      html,
+      body {
         height: 100%;
         margin: 0;
         overflow: hidden;
@@ -86,7 +87,7 @@
           bottom: 0;
           z-index: 1030;
           transform: translateX(-100%);
-          box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
         }
 
         .filters-panel.show {
@@ -108,7 +109,7 @@
         .pagination-info {
           font-size: 0.875rem;
         }
-        
+
         .pagination-container {
           padding: 0.25rem;
         }
@@ -125,8 +126,8 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <div class="container-fluid">
         <a class="navbar-brand" href="#">GANSID</a>
-        <button 
-          class="btn btn-outline-secondary d-md-none" 
+        <button
+          class="btn btn-outline-secondary d-md-none"
           @click="showFilters = !showFilters"
           x-text="showFilters ? 'Hide Filters' : 'Show Filters'"
         ></button>
@@ -136,24 +137,20 @@
     <div class="app-container">
       <div class="content-area">
         <!-- Backdrop for mobile filters -->
-        <div 
-          class="filters-backdrop" 
-          :class="{ 'show': showFilters }"
-          @click="showFilters = false"
-        ></div>
+        <div class="filters-backdrop" :class="{ 'show': showFilters }" @click="showFilters = false"></div>
 
         <!-- Filters Panel -->
-        <div 
-          class="filters-panel" 
+        <div
+          class="filters-panel"
           :class="{ 'show': showFilters }"
           @click.away="if(window.innerWidth < 768) showFilters = false"
         >
           <div class="card border-0">
             <div class="card-header d-flex justify-content-between align-items-center">
               <strong>Filters & Sorting</strong>
-              <button 
-                type="button" 
-                class="btn-close d-md-none" 
+              <button
+                type="button"
+                class="btn-close d-md-none"
                 @click="showFilters = false"
                 aria-label="Close"
               ></button>
@@ -240,7 +237,12 @@
               <!-- Healthy Volunteers Filter -->
               <div class="mb-3">
                 <label for="healthyVolunteers" class="form-label">Healthy Volunteers</label>
-                <select class="form-select" id="healthyVolunteers" x-model="filters.healthyVolunteers" @change="handleFilterChange">
+                <select
+                  class="form-select"
+                  id="healthyVolunteers"
+                  x-model="filters.healthyVolunteers"
+                  @change="handleFilterChange"
+                >
                   <option selected value="all">All</option>
                   <option value="true">Yes</option>
                   <option value="false">No</option>
@@ -334,26 +336,40 @@
             <nav aria-label="Trial pagination">
               <ul class="pagination justify-content-center mb-0">
                 <li class="page-item" :class="{ 'disabled': currentPage === 1 }">
-                  <button class="page-link" @click="previousPage()" :disabled="currentPage === 1">
-                    <i data-lucide="chevron-left" class="d-none d-sm-inline-block"></i>
+                  <button
+                    class="page-link d-flex align-items-center h-100"
+                    @click="previousPage()"
+                    :disabled="currentPage === 1"
+                  >
+                    <i
+                      data-lucide="chevron-left"
+                      class="d-none d-sm-inline-block"
+                      style="width: 16px; height: 16px"
+                    ></i>
                     <span>Prev</span>
                   </button>
                 </li>
 
                 <li class="page-item disabled">
                   <span class="page-link pagination-info">
-                    <span class="d-none d-sm-inline">Page </span><span x-text="currentPage"></span> of <span x-text="totalPages()"></span>
-                    <span class="d-none d-sm-inline">
-                      (<span x-text="totalCount"></span> results)
-                    </span>
+                    <span class="d-none d-sm-inline">Page </span><span x-text="currentPage"></span> of
+                    <span x-text="totalPages()"></span>
+                    <span class="d-none d-sm-inline"> (<span x-text="totalCount"></span> results) </span>
                   </span>
                 </li>
 
                 <li class="page-item" :class="{ 'disabled': currentPage >= totalPages() }">
-                  <button class="page-link" @click="nextPage()" :disabled="currentPage >= totalPages() || loading">
+                  <button
+                    class="page-link d-flex align-items-center h-100"
+                    @click="nextPage()"
+                    :disabled="currentPage >= totalPages()"
+                  >
                     <span>Next</span>
-                    <i data-lucide="chevron-right" class="d-none d-sm-inline-block"></i>
-                    <span x-show="loading" class="spinner-border spinner-border-sm ms-1" role="status"></span>
+                    <i
+                      data-lucide="chevron-right"
+                      class="d-none d-sm-inline-block"
+                      style="width: 16px; height: 16px"
+                    ></i>
                   </button>
                 </li>
               </ul>
@@ -405,7 +421,7 @@
             country: 'all',
             condition: 'all',
             sex: 'all',
-            healthyVolunteers: 'all'
+            healthyVolunteers: 'all',
           };
         };
 
@@ -430,6 +446,14 @@
             'Hematologic Diseases',
             'Myeloid Chimerism',
           ],
+
+          toggleFilters() {
+            if (this.showFilters) {
+              this.showFilters = false;
+            } else {
+              this.showFilters = true;
+            }
+          },
 
           totalPages() {
             return Math.ceil(this.totalCount / this.pageSize);
@@ -626,12 +650,12 @@
 
               // Sex filter
               ...(this.filters.sex !== 'all' && {
-                'filter.sex': this.filters.sex
+                'filter.sex': this.filters.sex,
               }),
 
               // Healthy Volunteers filter
               ...(this.filters.healthyVolunteers !== 'all' && {
-                'filter.healthyVolunteers': this.filters.healthyVolunteers
+                'filter.healthyVolunteers': this.filters.healthyVolunteers,
               }),
 
               // Pagination token
@@ -676,7 +700,7 @@
           init() {
             // Show filters by default only on desktop
             this.showFilters = window.innerWidth >= 768;
-            
+
             // Handle resize events
             window.addEventListener('resize', () => {
               if (window.innerWidth >= 768) {
